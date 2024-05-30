@@ -1,0 +1,20 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <OutputType>Exe</OutputType>
+	  <ImplicitUsings>enable</ImplicitUsings>
+	  <Nullable>enable</Nullable>
+    <EnforceCodeStyleInBuild>false</EnforceCodeStyleInBuild>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Castle.Windsor" Version="6.0.0" />
+    <PackageReference Include="Colorful.Console" Version="1.2.15" />
+    <PackageReference Include="editorconfig" Version="0.15.0" />
+    <PackageReference Include="Figgle" Version="0.5.1" />
+    <PackageReference Include="Moq" Version="4.20.70" />
+    <PackageReference Include="Autofac" Version="8.0.0" />
+  </ItemGroup>
+
+</Project>

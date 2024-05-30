@@ -1,0 +1,94 @@
+# https://dev.azure.com .NET 7 CI/CD pipeline
+
+trigger:
+#- master
+- none
+
+pool:
+  #vmImage: 'ubuntu-22.04'
+  name: Default
+  #vmImage: 'windows-latest'
+  vmImage: 'windows-2022'
+
+variables:
+  buildConfiguration: 'Release'
+
+steps:
+- task: UseDotNet@2
+  displayName: 'Use .NET Core sdk'
+  inputs:
+    packageType: sdk
+    version: 7.0.x
+    installationPath: $(Agent.ToolsDirectory)/dotnet
+
+- task: NuGetToolInstaller@1
+  inputs:
+    versionSpec: ''
+    checkLatest: true
+
+#Windows agent NuGetCommand restore does not work on Linux agents
+- task: NuGetCommand@2
+  displayName: 'Restore Nuget Packages'
+  inputs:
+    command: 'restore'
+    restoreSolution: '**/*.sln'
+
+#For Linux build agents
+# - task: DotNetCoreCLI@2
+#   displayName: 'Restore Nuget Packages'
+#   inputs:
+#     command: 'restore'
+#     projects: '**/*.csproj'
+
+- task: DotNetCoreCLI@2
+  displayName: Build
+  inputs:
+    command: build
+    projects: '**/*.csproj'
+    arguments: '--no-restore --configuration $(buildConfiguration)'
+
+# Run your tests
+- task: DotNetCoreCLI@2
+  displayName: 'Run Tests'
+  inputs:
+    command: test
+    projects: '**/*.Tests/*.csproj'
+    arguments: '--no-build --verbosity normal --configuration $(buildConfiguration) --collect:"XPlat Code Coverage"'
+    publishTestResults: true
+
+# https://learn.microsoft.com/en-us/azure/devops/pipelines/tasks/test/publish-code-coverage-results
+# https://josh-ops.com/posts/azure-devops-code-coverage/#the-better-way
+# ReportGenerator script to combine code coverage outputs into one
+#- script: |
+#    dotnet tool install -g dotnet-reportgenerator-globaltool
+#    reportgenerator -reports:$(Agent.WorkFolder)/**/coverage.cobertura.xml -targetdir:$(Build.SourcesDirectory)/CodeCoverage -reporttypes:'HtmlInline_AzurePipelines;Cobertura'
+#  displayName: Create Code Coverage Report
+
+# Publish Cobertura or JaCoCo code coverage results from a build
+- task: PublishCodeCoverageResults@1
+  displayName: 'Publish Code Coverage'
+  inputs:
+    codeCoverageTool: 'Cobertura'  # Available options: 'JaCoCo', 'Cobertura'
+    summaryFileLocation: $(Agent.TempDirectory)/*/coverage.cobertura.xml # using ** instead of * finds duplicate coverage files
+    reportDirectory: '$(Build.SourcesDirectory)/CoverageResults'
+    #pathToSources: '$(System.DefaultWorkingDirectory)/LoRaWanMqttApp/' # Optional
+    #additionalCodeCoverageFiles: # Optional
+    #failIfCoverageEmpty: false # Optional
+
+# https://learn.microsoft.com/en-us/azure/devops/pipelines/tasks/test/publish-test-results
+# Publish test results to Azure Pipelines
+# If you are using any of 'JaCoCo', 'Cobertura' tasks, you do not need a separate Publish Test Results task in the pipeline.
+
+
+#- task: DotNetCoreCLI@2
+#  displayName: Publish Artifact
+#  inputs:
+#    command: publish
+#    publishWebProjects: True
+#    arguments: '--configuration $(BuildConfiguration) --output $(Build.ArtifactStagingDirectory)'
+#    zipAfterPublish: True
+
+#- task: PublishBuildArtifacts@1
+#  inputs:
+#    pathtoPublish: '$(Build.ArtifactStagingDirectory)'
+#    artifactName: 'SSN.Library'
